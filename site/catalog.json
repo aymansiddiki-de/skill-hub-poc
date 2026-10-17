@@ -16,9 +16,9 @@
     "artifacts": [
       {
         "id": "lead-time-buffer-calculator",
-        "title": "Lead Time Buffer Calculator",
+        "title": "Safety Stock Buffer",
         "description": "Computes a safety stock buffer from demand variability and lead time",
-        "path": "registry/ayman/artifacts/lead-time-buffer-calculator.html"
+        "url": "https://claude.ai/artifact/2qVpk3kPKUeE9VxLBAdfxD"
       }
     ]
   },
@@ -41,7 +41,7 @@
         "id": "sku-rationalization-grid",
         "title": "SKU Rationalization Grid",
         "description": "Flags SKUs as keep, watch, or cut based on repeat rate and margin",
-        "path": "registry/dana/artifacts/sku-rationalization-grid.html"
+        "url": "https://claude.ai/artifact/Vrrm83DPmNYQtnNVvp5hrh"
       }
     ]
   }
