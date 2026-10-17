@@ -9,7 +9,11 @@
         "id": "forecast-variance-audit",
         "title": "Forecast Variance Audit",
         "description": "Flags SKUs where forecast error crossed a threshold and drafts a root-cause summary",
-        "tags": ["forecasting", "variance", "menu-planning"],
+        "tags": [
+          "forecasting",
+          "variance",
+          "menu-planning"
+        ],
         "path": "registry/ayman/skills/forecast-variance-audit.md"
       }
     ],
@@ -32,7 +36,11 @@
         "id": "recipe-cost-rollup",
         "title": "Recipe Cost Rollup",
         "description": "Rolls per-ingredient costs into a per-serving recipe cost with margin flags",
-        "tags": ["costing", "recipes", "menu-planning"],
+        "tags": [
+          "costing",
+          "recipes",
+          "menu-planning"
+        ],
         "path": "registry/dana/skills/recipe-cost-rollup.md"
       }
     ],
