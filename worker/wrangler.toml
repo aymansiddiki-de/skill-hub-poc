@@ -1,0 +1,9 @@
+name = "skill-hub-gateway"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+[vars]
+GITHUB_OWNER = "aymansiddiki-de"
+GITHUB_REPO = "skill-hub-poc"
+GITHUB_BRANCH = "main"
+ALLOWED_ORIGIN = "https://aymansiddiki-de.github.io"
