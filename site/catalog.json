@@ -1,0 +1,48 @@
+[
+  {
+    "id": "ayman",
+    "name": "Ayman Siddiki",
+    "role": "Supply Chain Planning Analyst",
+    "focus": "Forecasting, automation, menu planning",
+    "skills": [
+      {
+        "id": "forecast-variance-audit",
+        "title": "Forecast Variance Audit",
+        "description": "Flags SKUs where forecast error crossed a threshold and drafts a root-cause summary",
+        "tags": ["forecasting", "variance", "menu-planning"],
+        "path": "registry/ayman/skills/forecast-variance-audit.md"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "lead-time-buffer-calculator",
+        "title": "Safety Stock Buffer",
+        "description": "Computes a safety stock buffer from demand variability and lead time",
+        "url": "https://claude.ai/artifact/2qVpk3kPKUeE9VxLBAdfxD"
+      }
+    ]
+  },
+  {
+    "id": "dana",
+    "name": "Dana Whitfield",
+    "role": "US Menu Planning Analyst",
+    "focus": "Recipe costing, SKU rationalization",
+    "skills": [
+      {
+        "id": "recipe-cost-rollup",
+        "title": "Recipe Cost Rollup",
+        "description": "Rolls per-ingredient costs into a per-serving recipe cost with margin flags",
+        "tags": ["costing", "recipes", "menu-planning"],
+        "path": "registry/dana/skills/recipe-cost-rollup.md"
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "sku-rationalization-grid",
+        "title": "SKU Rationalization Grid",
+        "description": "Flags SKUs as keep, watch, or cut based on repeat rate and margin",
+        "url": "https://claude.ai/artifact/Vrrm83DPmNYQtnNVvp5hrh"
+      }
+    ]
+  }
+]
