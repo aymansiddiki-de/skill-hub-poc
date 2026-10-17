@@ -951,6 +951,124 @@
       user-select: none;
     }
 
+    #peopleGrid[hidden],
+    #personMarket[hidden] {
+      display: none;
+    }
+
+    .person-market-head {
+      margin-bottom: 28px;
+    }
+
+    .person-market-head h3 {
+      margin: 0 0 4px;
+      font-size: 28px;
+    }
+
+    .person-market-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .market-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .market-column h4 {
+      margin: 0 0 14px;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--muted);
+    }
+
+    .skill-cards,
+    .artifact-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .skill-card,
+    .artifact-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .skill-card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .skill-card-top h4,
+    .artifact-card h4 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .skill-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .skill-tags span {
+      font-size: 11px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px 9px;
+    }
+
+    .skill-card p,
+    .artifact-card > p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .artifact-preview {
+      border: 1px solid var(--line);
+      border-radius: calc(var(--radius) - 8px);
+      overflow: hidden;
+      margin-bottom: 14px;
+      height: 260px;
+    }
+
+    .artifact-preview iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+
+    .artifact-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .artifact-actions .btn,
+    .skill-card .btn {
+      min-height: 38px;
+      padding: 0 16px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 860px) {
+      .market-columns {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .experience-layout,
     .about-layout {
       display: grid;
@@ -1580,10 +1698,10 @@
 
     <header class="site-header">
       <div class="container nav">
-        <a class="brand magnetic" href="#work">Ayman Siddiki</a>
+        <a class="brand magnetic" href="#market">Ayman Siddiki</a>
 
         <nav class="nav-links" aria-label="Main navigation">
-          <a class="nav-link" href="#work" data-section="work">Work</a>
+          <a class="nav-link" href="#market" data-section="market">Market</a>
         </nav>
 
         <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light mode">
@@ -1604,126 +1722,34 @@
     </header>
 
     <main id="main-content">
-      <section class="section" id="work">
+      <section class="section" id="market">
         <div class="container">
           <div class="section-head">
             <div class="section-head-copy">
-              <span class="section-index">02 / Selected work</span>
-              <h2 class="section-title">Projects built around real systems</h2>
+              <span class="section-index">01 / Marketplace</span>
+              <h2 class="section-title">Skills and artifacts, shared across the team</h2>
             </div>
-            <a class="text-link magnetic" href="https://github.com/aymansiddiki0-stack" target="_blank" rel="noreferrer">View all projects</a>
+            <a class="text-link magnetic" href="#market" id="backToPeople" hidden>&larr; All people</a>
           </div>
 
-          <div class="project-grid">
-            <a class="project-card" href="https://github.com/aymansiddiki0-stack/realtime-event-detection-with-automated-alerts" target="_blank" rel="noreferrer" aria-label="Open Real-Time Event Detection Pipeline project on GitHub">
-              <span class="project-number">01</span>
-              <div class="project-card-content">
-                <div class="project-top">
-                  <span class="project-meta">Streaming / NLP</span>
-                  <span class="project-arrow">↗</span>
-                </div>
-                <div class="project-bottom">
-                  <h3>Real-Time Event Detection Pipeline</h3>
-                  <p>
-                    Kafka and Spark Streaming system that processes news and social data to identify
-                    emerging events and trigger automated alerts.
-                  </p>
-                  <div class="stack">Kafka · Spark · Airflow · NLP</div>
-                </div>
-              </div>
-            </a>
+          <div class="project-grid" id="peopleGrid"></div>
 
-            <a class="project-card" href="https://github.com/aymansiddiki0-stack/xgboost-churn-prediction-pipeline" target="_blank" rel="noreferrer" aria-label="Open XGBoost Churn Classifier project on GitHub">
-              <span class="project-number">02</span>
-              <div class="project-card-content">
-                <div class="project-top">
-                  <span class="project-meta">Machine learning</span>
-                  <span class="project-arrow">↗</span>
-                </div>
-                <div class="project-bottom">
-                  <h3>XGBoost Churn Classifier</h3>
-                  <p>
-                    End-to-end classification pipeline with Bayesian optimization, calibration
-                    analysis, feature engineering, and reproducible evaluation.
-                  </p>
-                  <div class="stack">Python · XGBoost · Optuna · SHAP</div>
-                </div>
-              </div>
-            </a>
+          <div class="person-market" id="personMarket" hidden>
+            <div class="person-market-head">
+              <h3 id="personName"></h3>
+              <p id="personRole"></p>
+            </div>
 
-            <a class="project-card" href="https://github.com/aymansiddiki0-stack/youtube-ad-data-etl-pipeline" target="_blank" rel="noreferrer" aria-label="Open YouTube Ad Saturation ETL project on GitHub">
-              <span class="project-number">03</span>
-              <div class="project-card-content">
-                <div class="project-top">
-                  <span class="project-meta">ETL / Analytics</span>
-                  <span class="project-arrow">↗</span>
-                </div>
-                <div class="project-bottom">
-                  <h3>YouTube Ad Saturation ETL</h3>
-                  <p>
-                    API-driven ETL workflow measuring ad density, engagement, and revenue pressure
-                    across live-streaming channels.
-                  </p>
-                  <div class="stack">Python · API · pandas · Streamlit</div>
-                </div>
+            <div class="market-columns">
+              <div class="market-column">
+                <h4>Skills</h4>
+                <div class="skill-cards" id="skillCards"></div>
               </div>
-            </a>
-
-            <a class="project-card" href="https://github.com/aymansiddiki0-stack/flight-reservation-db-with-MS-sql-server-backend" target="_blank" rel="noreferrer" aria-label="Open Flight Reservation Database project on GitHub">
-              <span class="project-number">04</span>
-              <div class="project-card-content">
-                <div class="project-top">
-                  <span class="project-meta">Database engineering</span>
-                  <span class="project-arrow">↗</span>
-                </div>
-                <div class="project-bottom">
-                  <h3>Flight Reservation Database</h3>
-                  <p>
-                    BCNF-normalized reservation system covering bookings, payments, reporting,
-                    forms, and migration to SQL Server.
-                  </p>
-                  <div class="stack">SQL Server · VBA · Data modeling</div>
-                </div>
+              <div class="market-column">
+                <h4>Artifacts</h4>
+                <div class="artifact-cards" id="artifactCards"></div>
               </div>
-            </a>
-
-            <a class="project-card" href="https://github.com/aymansiddiki0-stack/SkillDock" target="_blank" rel="noreferrer" aria-label="Open SkillDock project on GitHub">
-              <span class="project-number">05</span>
-              <div class="project-card-content">
-                <div class="project-top">
-                  <span class="project-meta">Browser extension</span>
-                  <span class="project-arrow">↗</span>
-                </div>
-                <div class="project-bottom">
-                  <h3>SkillDock</h3>
-                  <p>
-                    Chrome extension that automates skill entry into Workday job applications, live
-                    on the Chrome Web Store with real users. Matches only exact dropdown options and
-                    verifies every selection before reporting results.
-                  </p>
-                  <div class="stack">TypeScript · esbuild · Vitest · Chrome Extension</div>
-                </div>
-              </div>
-            </a>
-
-            <a class="project-card" href="https://github.com/aymansiddiki0-stack/hand-written-digit-classifier" target="_blank" rel="noreferrer" aria-label="Open Handwritten Digit Classifier project on GitHub">
-              <span class="project-number">06</span>
-              <div class="project-card-content">
-                <div class="project-top">
-                  <span class="project-meta">Machine learning</span>
-                  <span class="project-arrow">↗</span>
-                </div>
-                <div class="project-bottom">
-                  <h3>Handwritten Digit Classifier</h3>
-                  <p>
-                    Webcam-based digit recognition app pairing an MNIST-trained model with a
-                    confidence-aware interface, returning an uncertain response rather than an
-                    unreliable guess.
-                  </p>
-                  <div class="stack">PyTorch · ONNX · FastAPI · React</div>
-                </div>
-              </div>
-            </a>
+            </div>
           </div>
         </div>
       </section>
@@ -1909,13 +1935,13 @@
         });
 
         ScrollTrigger.create({
-          trigger: "#work",
+          trigger: "#market",
           start: "top 46%",
           end: "bottom 46%",
           onToggle: self => {
             if (!self.isActive) return;
             navLinks.forEach(link => {
-              link.classList.toggle("active", link.dataset.section === "work");
+              link.classList.toggle("active", link.dataset.section === "market");
             });
           }
         });
@@ -2157,6 +2183,132 @@
 
       window.addEventListener("resize", () => {
         if (window.ScrollTrigger) ScrollTrigger.refresh();
+      });
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const peopleGrid = document.getElementById("peopleGrid");
+      const personMarket = document.getElementById("personMarket");
+      const backToPeople = document.getElementById("backToPeople");
+      const personName = document.getElementById("personName");
+      const personRole = document.getElementById("personRole");
+      const skillCards = document.getElementById("skillCards");
+      const artifactCards = document.getElementById("artifactCards");
+
+      let people = [];
+
+      function stripFrontmatter(text) {
+        const match = text.match(/^---\n[\s\S]*?\n---\n?/);
+        return match ? text.slice(match[0].length).trim() : text.trim();
+      }
+
+      function renderPeople() {
+        peopleGrid.innerHTML = people.map((person, index) => `
+          <a class="project-card" href="#${person.id}" aria-label="Open ${person.name}'s skills and artifacts">
+            <span class="project-number">${String(index + 1).padStart(2, "0")}</span>
+            <div class="project-card-content">
+              <div class="project-top">
+                <span class="project-meta">${person.role}</span>
+                <span class="project-arrow">↗</span>
+              </div>
+              <div class="project-bottom">
+                <h3>${person.name}</h3>
+                <p>${person.focus}</p>
+                <div class="stack">${person.skills.length} skills · ${person.artifacts.length} artifacts</div>
+              </div>
+            </div>
+          </a>
+        `).join("");
+      }
+
+      function renderMarket(person) {
+        personName.textContent = person.name;
+        personRole.textContent = `${person.role} · ${person.focus}`;
+
+        skillCards.innerHTML = person.skills.map(skill => `
+          <article class="skill-card">
+            <div class="skill-card-top">
+              <h4>${skill.title}</h4>
+              <div class="skill-tags">${skill.tags.map(tag => `<span>${tag}</span>`).join("")}</div>
+            </div>
+            <p>${skill.description}</p>
+            <button class="btn btn-secondary copy-skill" data-path="${skill.path}">Copy prompt</button>
+          </article>
+        `).join("");
+
+        artifactCards.innerHTML = person.artifacts.map(artifact => `
+          <article class="artifact-card">
+            <div class="artifact-preview">
+              <iframe src="${artifact.path}" sandbox="allow-scripts allow-forms" loading="lazy"></iframe>
+            </div>
+            <h4>${artifact.title}</h4>
+            <p>${artifact.description}</p>
+            <div class="artifact-actions">
+              <a class="btn btn-secondary" href="${artifact.path}" target="_blank" rel="noreferrer">Open fullscreen</a>
+              <button class="btn btn-secondary copy-artifact" data-path="${artifact.path}">Copy code</button>
+            </div>
+          </article>
+        `).join("");
+
+        peopleGrid.hidden = true;
+        backToPeople.hidden = false;
+        personMarket.hidden = false;
+      }
+
+      function showPeopleGrid() {
+        peopleGrid.hidden = false;
+        backToPeople.hidden = true;
+        personMarket.hidden = true;
+      }
+
+      function route() {
+        const id = window.location.hash.slice(1);
+        const person = people.find(p => p.id === id);
+
+        if (person) {
+          renderMarket(person);
+        } else {
+          showPeopleGrid();
+        }
+      }
+
+      fetch("site/catalog.json")
+        .then(res => res.json())
+        .then(data => {
+          people = data;
+          renderPeople();
+          route();
+        });
+
+      window.addEventListener("hashchange", route);
+
+      document.addEventListener("click", event => {
+        const copySkill = event.target.closest(".copy-skill");
+        if (copySkill) {
+          fetch(copySkill.dataset.path)
+            .then(res => res.text())
+            .then(text => navigator.clipboard.writeText(stripFrontmatter(text)))
+            .then(() => {
+              const original = copySkill.textContent;
+              copySkill.textContent = "Copied";
+              setTimeout(() => { copySkill.textContent = original; }, 1500);
+            });
+          return;
+        }
+
+        const copyArtifact = event.target.closest(".copy-artifact");
+        if (copyArtifact) {
+          fetch(copyArtifact.dataset.path)
+            .then(res => res.text())
+            .then(text => navigator.clipboard.writeText(text))
+            .then(() => {
+              const original = copyArtifact.textContent;
+              copyArtifact.textContent = "Copied";
+              setTimeout(() => { copyArtifact.textContent = original; }, 1500);
+            });
+        }
       });
     })();
   </script>

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Lead Time Buffer Calculator</title>
+<style>
+  body {
+    margin: 0;
+    padding: 24px;
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #0f1115;
+    color: #e6e8eb;
+  }
+  h1 {
+    font-size: 16px;
+    margin: 0 0 16px;
+    color: #fff;
+  }
+  label {
+    display: block;
+    font-size: 12px;
+    color: #9aa1ab;
+    margin-bottom: 4px;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #2a2d33;
+    background: #16181d;
+    color: #e6e8eb;
+    font-size: 14px;
+  }
+  button {
+    margin-top: 8px;
+    padding: 9px 16px;
+    border-radius: 6px;
+    border: none;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #2563eb;
+  }
+  .result {
+    margin-top: 18px;
+    padding: 14px;
+    border-radius: 8px;
+    background: #16181d;
+    border: 1px solid #2a2d33;
+  }
+  .result-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: #9aa1ab;
+  }
+  .result-value {
+    font-size: 24px;
+    font-weight: 600;
+    color: #fff;
+    margin-top: 4px;
+  }
+  .note {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #9aa1ab;
+  }
+</style>
+</head>
+<body>
+  <h1>Lead Time Buffer Calculator</h1>
+
+  <div class="row">
+    <div>
+      <label for="avgDemand">Avg daily demand</label>
+      <input id="avgDemand" type="number" value="140">
+    </div>
+    <div>
+      <label for="demandStd">Demand std dev</label>
+      <input id="demandStd" type="number" value="22">
+    </div>
+  </div>
+
+  <div class="row">
+    <div>
+      <label for="leadTime">Lead time (days)</label>
+      <input id="leadTime" type="number" value="5">
+    </div>
+    <div>
+      <label for="serviceLevel">Service level (z-score)</label>
+      <input id="serviceLevel" type="number" step="0.01" value="1.65">
+    </div>
+  </div>
+
+  <button id="calcBtn">Calculate safety stock</button>
+
+  <div class="result">
+    <div class="result-label">Safety stock buffer</div>
+    <div class="result-value" id="output">—</div>
+    <div class="note" id="noteText"></div>
+  </div>
+
+  <script>
+    const calcBtn = document.getElementById("calcBtn");
+    const output = document.getElementById("output");
+    const noteText = document.getElementById("noteText");
+
+    function calculate() {
+      const demandStd = parseFloat(document.getElementById("demandStd").value) || 0;
+      const leadTime = parseFloat(document.getElementById("leadTime").value) || 0;
+      const z = parseFloat(document.getElementById("serviceLevel").value) || 0;
+
+      const safetyStock = z * demandStd * Math.sqrt(leadTime);
+
+      output.textContent = `${safetyStock.toFixed(0)} units`;
+      noteText.textContent = `z=${z} over a ${leadTime}-day lead time, demand std dev of ${demandStd}/day.`;
+    }
+
+    calcBtn.addEventListener("click", calculate);
+    calculate();
+  </script>
+</body>
+</html>

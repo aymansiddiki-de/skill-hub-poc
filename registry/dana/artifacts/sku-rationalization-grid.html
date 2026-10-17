@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SKU Rationalization Grid</title>
+<style>
+  body {
+    margin: 0;
+    padding: 24px;
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #0f1115;
+    color: #e6e8eb;
+  }
+  h1 {
+    font-size: 16px;
+    margin: 0 0 16px;
+    color: #fff;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid #2a2d33;
+  }
+  th {
+    color: #9aa1ab;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  tr.keep td { color: #4ade80; }
+  tr.watch td { color: #facc15; }
+  tr.cut td { color: #f87171; }
+  .add-row {
+    margin-top: 14px;
+    display: flex;
+    gap: 8px;
+  }
+  input {
+    flex: 1;
+    padding: 7px 9px;
+    border-radius: 6px;
+    border: 1px solid #2a2d33;
+    background: #16181d;
+    color: #e6e8eb;
+    font-size: 13px;
+  }
+  button {
+    padding: 7px 14px;
+    border-radius: 6px;
+    border: none;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #2563eb;
+  }
+</style>
+</head>
+<body>
+  <h1>SKU Rationalization Grid</h1>
+
+  <table id="grid">
+    <thead>
+      <tr><th>SKU</th><th>Repeat rate</th><th>Margin</th><th>Call</th></tr>
+    </thead>
+    <tbody id="rows">
+      <tr class="keep"><td>Chicken Fajita Bowl</td><td>61%</td><td>34%</td><td>Keep</td></tr>
+      <tr class="watch"><td>Korean BBQ Tofu</td><td>22%</td><td>29%</td><td>Watch</td></tr>
+      <tr class="cut"><td>Lemon Herb Cod</td><td>9%</td><td>18%</td><td>Cut</td></tr>
+    </tbody>
+  </table>
+
+  <div class="add-row">
+    <input id="skuName" placeholder="SKU name">
+    <input id="repeatRate" placeholder="Repeat %" style="max-width: 90px;">
+    <input id="margin" placeholder="Margin %" style="max-width: 90px;">
+    <button id="addBtn">Add</button>
+  </div>
+
+  <script>
+    const rows = document.getElementById("rows");
+    const addBtn = document.getElementById("addBtn");
+
+    function callFor(repeat, margin) {
+      if (repeat >= 40 && margin >= 28) return "keep";
+      if (repeat < 15 || margin < 20) return "cut";
+      return "watch";
+    }
+
+    addBtn.addEventListener("click", () => {
+      const name = document.getElementById("skuName").value.trim();
+      const repeat = parseFloat(document.getElementById("repeatRate").value);
+      const margin = parseFloat(document.getElementById("margin").value);
+
+      if (!name || isNaN(repeat) || isNaN(margin)) return;
+
+      const cls = callFor(repeat, margin);
+      const label = cls === "keep" ? "Keep" : cls === "cut" ? "Cut" : "Watch";
+
+      const tr = document.createElement("tr");
+      tr.className = cls;
+      tr.innerHTML = `<td>${name}</td><td>${repeat}%</td><td>${margin}%</td><td>${label}</td>`;
+      rows.appendChild(tr);
+
+      document.getElementById("skuName").value = "";
+      document.getElementById("repeatRate").value = "";
+      document.getElementById("margin").value = "";
+    });
+  </script>
+</body>
+</html>
