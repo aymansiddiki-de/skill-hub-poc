@@ -953,8 +953,91 @@
     }
 
     #peopleGrid[hidden],
-    #personMarket[hidden] {
+    #personMarket[hidden],
+    #skillFields[hidden],
+    #artifactFields[hidden] {
       display: none;
+    }
+
+    .section-head-actions {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,.55);
+      padding: 20px;
+    }
+
+    .modal-overlay[hidden] {
+      display: none;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+      background: var(--bg);
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      padding: 26px;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .modal-head h3 {
+      margin: 0;
+      font-size: 19px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    #addForm {
+      display: grid;
+      gap: 16px;
+    }
+
+    .radio-row {
+      display: flex;
+      gap: 18px;
+      font-size: 14px;
+    }
+
+    .radio-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text);
+      text-transform: none;
+      letter-spacing: normal;
+      font-size: 14px;
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
 
     .person-market-head {
@@ -1312,6 +1395,7 @@
     }
 
     .form-field input,
+    .form-field select,
     .form-field textarea {
       width: 100%;
       border: 1px solid var(--line);
@@ -1324,7 +1408,8 @@
       transition: border-color .2s ease, background .2s ease;
     }
 
-    .form-field input {
+    .form-field input,
+    .form-field select {
       min-height: 48px;
       padding: 0 14px;
     }
@@ -1728,7 +1813,10 @@
               <span class="section-index">01 / Marketplace</span>
               <h2 class="section-title">Skills and artifacts, shared across the team</h2>
             </div>
-            <a class="text-link magnetic" href="#market" id="backToPeople" hidden>&larr; All people</a>
+            <div class="section-head-actions">
+              <a class="text-link magnetic" href="#market" id="backToPeople" hidden>&larr; All people</a>
+              <button class="btn btn-primary magnetic" id="openAddModal" type="button">+ Add new tool</button>
+            </div>
           </div>
 
           <div class="project-grid" id="peopleGrid"></div>
@@ -1763,7 +1851,57 @@
         </div>
       </div>
     </footer>
-  </div>
+
+    <div class="modal-overlay" id="addModalOverlay" hidden>
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="addModalTitle">
+        <div class="modal-head">
+          <h3 id="addModalTitle">Add a skill or artifact</h3>
+          <button class="modal-close" id="closeAddModal" type="button" aria-label="Close">&times;</button>
+        </div>
+
+        <form id="addForm">
+          <div class="form-field">
+            <label for="addAuthor">Author</label>
+            <select id="addAuthor" required></select>
+          </div>
+
+          <div class="form-field">
+            <label>Type</label>
+            <div class="radio-row">
+              <label><input type="radio" name="addType" value="skill" checked> Skill</label>
+              <label><input type="radio" name="addType" value="artifact"> Artifact</label>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="addTitle">Title</label>
+            <input id="addTitle" type="text" required>
+          </div>
+
+          <div class="form-field">
+            <label for="addDescription">Short description</label>
+            <input id="addDescription" type="text" required>
+          </div>
+
+          <div class="form-field" id="skillFields">
+            <label for="addTags">Tags (comma separated)</label>
+            <input id="addTags" type="text" placeholder="forecasting, variance, menu-planning">
+            <label for="addBody" style="margin-top: 10px;">Prompt</label>
+            <textarea id="addBody" rows="6" placeholder="Paste the skill's instructions here"></textarea>
+          </div>
+
+          <div class="form-field" id="artifactFields" hidden>
+            <label for="addUrl">Claude artifact URL</label>
+            <input id="addUrl" type="url" placeholder="https://claude.ai/artifact/...">
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit" id="addSubmit">Add to hub</button>
+            <span class="form-status" id="addStatus"></span>
+          </div>
+        </form>
+      </div>
+    </div>
 
   <script src="https://unpkg.com/lenis@1.3.25/dist/lenis.min.js"></script>
 
@@ -2236,6 +2374,7 @@
             <div class="artifact-actions">
               <button class="btn btn-secondary copy-skill" data-path="${skill.path}">Copy prompt</button>
               <a class="btn btn-secondary" href="${skill.path}" download>Download .md</a>
+              <button class="btn btn-secondary remove-asset" data-author="${person.id}" data-type="skill" data-filename="${skill.path.split("/").pop()}">Remove</button>
             </div>
           </article>
         `).join("");
@@ -2248,6 +2387,7 @@
             <div class="artifact-actions">
               <a class="btn btn-secondary" href="${artifact.url}" target="_blank" rel="noreferrer">Open artifact</a>
               <button class="btn btn-secondary copy-artifact" data-url="${artifact.url}">Copy link</button>
+              <button class="btn btn-secondary remove-asset" data-author="${person.id}" data-type="artifact" data-filename="${artifact.id}.json">Remove</button>
             </div>
           </article>
         `).join("");
@@ -2306,7 +2446,145 @@
               copyArtifact.textContent = "Copied";
               setTimeout(() => { copyArtifact.textContent = original; }, 1500);
             });
+          return;
         }
+
+        const removeBtn = event.target.closest(".remove-asset");
+        if (removeBtn) {
+          if (removeBtn.dataset.confirming !== "true") {
+            removeBtn.dataset.confirming = "true";
+            removeBtn.dataset.original = removeBtn.textContent;
+            removeBtn.textContent = "Confirm remove?";
+            removeBtn._confirmTimeout = setTimeout(() => {
+              removeBtn.textContent = removeBtn.dataset.original;
+              removeBtn.dataset.confirming = "false";
+            }, 4000);
+            return;
+          }
+
+          clearTimeout(removeBtn._confirmTimeout);
+          removeBtn.disabled = true;
+          removeBtn.textContent = "Removing...";
+
+          fetch(GATEWAY_URL, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json", "X-Team-Auth": TEAM_AUTH_SECRET },
+            body: JSON.stringify({
+              author: removeBtn.dataset.author,
+              type: removeBtn.dataset.type,
+              filename: removeBtn.dataset.filename,
+            }),
+          })
+            .then(async res => {
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || "remove failed");
+              removeBtn.closest("article").remove();
+            })
+            .catch(() => {
+              removeBtn.textContent = "Remove failed";
+              removeBtn.disabled = false;
+              setTimeout(() => {
+                removeBtn.textContent = removeBtn.dataset.original;
+                removeBtn.dataset.confirming = "false";
+              }, 2000);
+            });
+        }
+      });
+
+      const addModalOverlay = document.getElementById("addModalOverlay");
+      const openAddModal = document.getElementById("openAddModal");
+      const closeAddModal = document.getElementById("closeAddModal");
+      const addForm = document.getElementById("addForm");
+      const addAuthor = document.getElementById("addAuthor");
+      const skillFields = document.getElementById("skillFields");
+      const artifactFields = document.getElementById("artifactFields");
+      const addSubmit = document.getElementById("addSubmit");
+      const addStatus = document.getElementById("addStatus");
+
+      // POC-only: the Worker is gated by this one shared secret, not per-user
+      // identity, so it's visible to anyone who views source. Fine until the
+      // Google-auth layer replaces it - see NOTES.md.
+      const GATEWAY_URL = "https://skill-hub-gateway.aymansiddiki1970.workers.dev/api/asset";
+      const TEAM_AUTH_SECRET = "BC1ghVMxAteqg2ZwsxCBN84jtmy1vydA";
+
+      function slugify(text) {
+        const slug = text
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+        return slug || "untitled";
+      }
+
+      function showAddModal() {
+        addAuthor.innerHTML = people.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+        addForm.reset();
+        addStatus.textContent = "";
+        skillFields.hidden = false;
+        artifactFields.hidden = true;
+        addModalOverlay.hidden = false;
+      }
+
+      function hideAddModal() {
+        addModalOverlay.hidden = true;
+      }
+
+      openAddModal.addEventListener("click", showAddModal);
+      closeAddModal.addEventListener("click", hideAddModal);
+      addModalOverlay.addEventListener("click", event => {
+        if (event.target === addModalOverlay) hideAddModal();
+      });
+
+      addForm.addEventListener("change", event => {
+        if (event.target.name === "addType") {
+          const isSkill = event.target.value === "skill";
+          skillFields.hidden = !isSkill;
+          artifactFields.hidden = isSkill;
+        }
+      });
+
+      addForm.addEventListener("submit", event => {
+        event.preventDefault();
+
+        const author = addAuthor.value;
+        const type = addForm.querySelector('input[name="addType"]:checked').value;
+        const title = document.getElementById("addTitle").value.trim();
+        const description = document.getElementById("addDescription").value.trim();
+        const slug = slugify(title);
+
+        let filename, content;
+
+        if (type === "skill") {
+          const tags = document.getElementById("addTags").value
+            .split(",").map(t => t.trim()).filter(Boolean);
+          const body = document.getElementById("addBody").value.trim();
+          filename = `${slug}.md`;
+          content = `---\ntitle: ${title}\ndescription: ${description}\ntags: [${tags.join(", ")}]\n---\n\n${body}\n`;
+        } else {
+          const url = document.getElementById("addUrl").value.trim();
+          filename = `${slug}.json`;
+          content = JSON.stringify({ title, description, url }, null, 2) + "\n";
+        }
+
+        addSubmit.disabled = true;
+        addStatus.textContent = "Adding...";
+
+        fetch(GATEWAY_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Team-Auth": TEAM_AUTH_SECRET },
+          body: JSON.stringify({ author, type, filename, content }),
+        })
+          .then(async res => {
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "add failed");
+            addStatus.textContent = "Added - it'll show up once the catalog rebuilds (~1 min).";
+          })
+          .catch(err => {
+            addStatus.textContent = `Error: ${err.message}`;
+          })
+          .finally(() => {
+            addSubmit.disabled = false;
+          });
       });
     })();
   </script>
