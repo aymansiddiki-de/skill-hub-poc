@@ -15,6 +15,13 @@
           "menu-planning"
         ],
         "path": "registry/ayman/skills/forecast-variance-audit.md"
+      },
+      {
+        "id": "modal-smoke-test",
+        "title": "Modal Smoke Test",
+        "description": "End-to-end test of the Add modal against the live Worker",
+        "tags": [],
+        "path": "registry/ayman/skills/modal-smoke-test.md"
       }
     ],
     "artifacts": [
