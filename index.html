@@ -2232,7 +2232,10 @@
               <div class="skill-tags">${skill.tags.map(tag => `<span>${tag}</span>`).join("")}</div>
             </div>
             <p>${skill.description}</p>
-            <button class="btn btn-secondary copy-skill" data-path="${skill.path}">Copy prompt</button>
+            <div class="artifact-actions">
+              <button class="btn btn-secondary copy-skill" data-path="${skill.path}">Copy prompt</button>
+              <a class="btn btn-secondary" href="${skill.path}" download>Download .md</a>
+            </div>
           </article>
         `).join("");
 
