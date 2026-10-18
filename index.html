@@ -1414,6 +1414,13 @@
       padding: 0 14px;
     }
 
+    .form-field input[type="file"] {
+      min-height: 0;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
     .form-field textarea {
       min-height: 150px;
       padding: 13px 14px;
@@ -1886,8 +1893,10 @@
           <div class="form-field" id="skillFields">
             <label for="addTags">Tags (comma separated)</label>
             <input id="addTags" type="text" placeholder="forecasting, variance, menu-planning">
+            <label for="addFile" style="margin-top: 10px;">Upload a .md file (optional)</label>
+            <input id="addFile" type="file" accept=".md,.markdown,text/markdown">
             <label for="addBody" style="margin-top: 10px;">Prompt</label>
-            <textarea id="addBody" rows="6" placeholder="Paste the skill's instructions here"></textarea>
+            <textarea id="addBody" rows="6" placeholder="Paste the skill's instructions here, or upload a file above"></textarea>
           </div>
 
           <div class="form-field" id="artifactFields" hidden>
@@ -2337,7 +2346,7 @@
       let people = [];
 
       function stripFrontmatter(text) {
-        const match = text.match(/^---\n[\s\S]*?\n---\n?/);
+        const match = text.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
         return match ? text.slice(match[0].length).trim() : text.trim();
       }
 
@@ -2541,6 +2550,44 @@
           skillFields.hidden = !isSkill;
           artifactFields.hidden = isSkill;
         }
+      });
+
+      function parseSkillFile(text) {
+        const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+        if (!match) return { fields: {}, body: text.trim() };
+
+        const fields = {};
+        match[1].split(/\r?\n/).forEach(line => {
+          const idx = line.indexOf(":");
+          if (idx === -1) return;
+          const key = line.slice(0, idx).trim();
+          const value = line.slice(idx + 1).trim();
+          if (value.startsWith("[") && value.endsWith("]")) {
+            fields[key] = value.slice(1, -1).split(",").map(v => v.trim()).filter(Boolean);
+          } else {
+            fields[key] = value;
+          }
+        });
+
+        return { fields, body: text.slice(match[0].length).trim() };
+      }
+
+      document.getElementById("addFile").addEventListener("change", async event => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const { fields, body } = parseSkillFile(await file.text());
+        const titleInput = document.getElementById("addTitle");
+        const descriptionInput = document.getElementById("addDescription");
+        const tagsInput = document.getElementById("addTags");
+
+        if (fields.title && !titleInput.value) titleInput.value = fields.title;
+        if (fields.description && !descriptionInput.value) descriptionInput.value = fields.description;
+        if (fields.tags && !tagsInput.value) {
+          tagsInput.value = (Array.isArray(fields.tags) ? fields.tags : [fields.tags]).join(", ");
+        }
+
+        document.getElementById("addBody").value = body;
       });
 
       addForm.addEventListener("submit", event => {
