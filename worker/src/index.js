@@ -129,7 +129,7 @@ async function handleUpsert(request, env, identity) {
 
     const existing = await env.DB.prepare(`SELECT * FROM ${table} WHERE id = ?`).bind(id).first();
     if (!existing) return jsonResponse({ error: "not found" }, 404, env);
-    if (existing.author !== identity.authorId) {
+    if (existing.author !== identity.authorId && !identity.isAdmin) {
       return jsonResponse({ error: "you can only edit your own content" }, 403, env);
     }
 
@@ -183,7 +183,7 @@ async function handleDelete(request, env, identity) {
   const table = type === "skill" ? "skills" : "artifacts";
   const existing = await env.DB.prepare(`SELECT * FROM ${table} WHERE id = ?`).bind(id).first();
   if (!existing) return jsonResponse({ error: "not found" }, 404, env);
-  if (existing.author !== identity.authorId) {
+  if (existing.author !== identity.authorId && !identity.isAdmin) {
     return jsonResponse({ error: "you can only remove your own content" }, 403, env);
   }
 
@@ -243,6 +243,23 @@ async function handleAdminApprove(request, env, identity) {
   return jsonResponse({ ok: true, personId }, 200, env);
 }
 
+async function handleAdminDeny(request, env, identity) {
+  if (!identity || !identity.isAdmin) return jsonResponse({ error: "admin only" }, 403, env);
+
+  const { requestId } = await request.json();
+  const req = await env.DB.prepare(
+    "SELECT id FROM contributor_requests WHERE id = ? AND status = 'pending'"
+  ).bind(requestId).first();
+
+  if (!req) return jsonResponse({ error: "request not found or already resolved" }, 404, env);
+
+  await env.DB.prepare(
+    "UPDATE contributor_requests SET status = 'denied' WHERE id = ?"
+  ).bind(requestId).run();
+
+  return jsonResponse({ ok: true }, 200, env);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -284,6 +301,10 @@ export default {
 
       if (url.pathname === "/api/admin/approve" && request.method === "POST") {
         return await handleAdminApprove(request, env, identity);
+      }
+
+      if (url.pathname === "/api/admin/deny" && request.method === "POST") {
+        return await handleAdminDeny(request, env, identity);
       }
 
       return jsonResponse({ error: "not found" }, 404, env);

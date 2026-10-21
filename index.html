@@ -2529,6 +2529,7 @@
                 <input class="approve-role" placeholder="Role" style="max-width:150px;">
                 <input class="approve-focus" placeholder="Focus" style="max-width:190px;">
                 <button class="btn btn-primary approve-request" data-id="${req.id}">Approve</button>
+                <button class="btn btn-secondary deny-request" data-id="${req.id}">Deny</button>
               </div>
             </article>
           `).join("");
@@ -2677,6 +2678,28 @@
             .catch(() => {
               approveBtn.textContent = "Failed";
               approveBtn.disabled = false;
+            });
+          return;
+        }
+
+        const denyBtn = event.target.closest(".deny-request");
+        if (denyBtn) {
+          denyBtn.disabled = true;
+          denyBtn.textContent = "Denying...";
+
+          api("/api/admin/deny", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ requestId: Number(denyBtn.dataset.id) }),
+          })
+            .then(async res => {
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || "deny failed");
+              denyBtn.closest("article").remove();
+            })
+            .catch(() => {
+              denyBtn.textContent = "Failed";
+              denyBtn.disabled = false;
             });
         }
       });
