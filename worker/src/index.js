@@ -27,6 +27,17 @@ function jsonResponse(body, status, env) {
   });
 }
 
+// A malformed/empty body is a client input error, not a server error -
+// callers should turn a null return into a 400, not let JSON.parse's
+// SyntaxError bubble up to the generic 500 handler.
+async function parseJsonBody(request) {
+  try {
+    return await request.json();
+  } catch {
+    return null;
+  }
+}
+
 async function resolveIdentity(request, env) {
   const devId = request.headers.get("X-Dev-User");
   const devUser = devId && DEV_USERS[devId];
@@ -109,7 +120,9 @@ async function handleContent(url, env) {
 async function handleUpsert(request, env, identity) {
   if (!identity) return jsonResponse({ error: "sign-in required" }, 401, env);
 
-  const body = await request.json();
+  const body = await parseJsonBody(request);
+  if (!body) return jsonResponse({ error: "invalid JSON body" }, 400, env);
+
   const { intent, type, id, title, description } = body;
 
   if (!["skill", "artifact"].includes(type)) {
@@ -117,6 +130,9 @@ async function handleUpsert(request, env, identity) {
   }
   if (!["create", "update"].includes(intent)) {
     return jsonResponse({ error: "invalid intent" }, 400, env);
+  }
+  if (type === "skill" && body.tags !== undefined && !Array.isArray(body.tags)) {
+    return jsonResponse({ error: "tags must be an array" }, 400, env);
   }
   if (!title || !title.trim()) {
     return jsonResponse({ error: "title required" }, 400, env);
@@ -175,7 +191,10 @@ async function handleUpsert(request, env, identity) {
 async function handleDelete(request, env, identity) {
   if (!identity) return jsonResponse({ error: "sign-in required" }, 401, env);
 
-  const { type, id } = await request.json();
+  const body = await parseJsonBody(request);
+  if (!body) return jsonResponse({ error: "invalid JSON body" }, 400, env);
+
+  const { type, id } = body;
   if (!["skill", "artifact"].includes(type) || !id) {
     return jsonResponse({ error: "invalid request" }, 400, env);
   }
@@ -224,14 +243,26 @@ async function handleAdminRequests(env, identity) {
 async function handleAdminApprove(request, env, identity) {
   if (!identity || !identity.isAdmin) return jsonResponse({ error: "admin only" }, 403, env);
 
-  const { requestId, role, focus } = await request.json();
+  const body = await parseJsonBody(request);
+  if (!body) return jsonResponse({ error: "invalid JSON body" }, 400, env);
+
+  const { requestId, role, focus } = body;
   const req = await env.DB.prepare(
     "SELECT * FROM contributor_requests WHERE id = ? AND status = 'pending'"
   ).bind(requestId).first();
 
   if (!req) return jsonResponse({ error: "request not found or already resolved" }, 404, env);
 
-  const personId = slugify(req.name);
+  // Two different people can share a display name, which would otherwise
+  // collide on the same slugified id and crash the INSERT - append a
+  // numeric suffix until the id is free instead of failing ugly.
+  let personId = slugify(req.name);
+  let suffix = 2;
+  while (await env.DB.prepare("SELECT id FROM people WHERE id = ?").bind(personId).first()) {
+    personId = `${slugify(req.name)}-${suffix}`;
+    suffix++;
+  }
+
   await env.DB.prepare(
     "INSERT INTO people (id, name, role, focus, email) VALUES (?, ?, ?, ?, ?)"
   ).bind(personId, req.name, role || "", focus || "", req.email).run();
@@ -246,7 +277,10 @@ async function handleAdminApprove(request, env, identity) {
 async function handleAdminDeny(request, env, identity) {
   if (!identity || !identity.isAdmin) return jsonResponse({ error: "admin only" }, 403, env);
 
-  const { requestId } = await request.json();
+  const body = await parseJsonBody(request);
+  if (!body) return jsonResponse({ error: "invalid JSON body" }, 400, env);
+
+  const { requestId } = body;
   const req = await env.DB.prepare(
     "SELECT id FROM contributor_requests WHERE id = ? AND status = 'pending'"
   ).bind(requestId).first();
