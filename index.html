@@ -293,6 +293,29 @@
       transform: scaleX(1);
     }
 
+    .dev-identity {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      border: 1px dashed var(--line-strong);
+      border-radius: 999px;
+      padding: 5px 12px;
+    }
+
+    .dev-identity select {
+      background: transparent;
+      color: var(--text);
+      border: none;
+      font-size: 12px;
+      font-family: inherit;
+    }
+
+    @media (max-width: 860px) {
+      .dev-identity { display: none; }
+    }
+
     .theme-toggle {
       display: inline-flex;
       align-items: center;
@@ -952,11 +975,13 @@
       user-select: none;
     }
 
-    #peopleGrid[hidden],
-    #personMarket[hidden],
-    #skillFields[hidden],
-    #artifactFields[hidden] {
-      display: none;
+    /* Hit this same bug three times: any class with its own `display` (.btn,
+       .text-link, .project-grid, .form-field, ...) beats the browser's
+       default [hidden] rule, because author-origin CSS always outranks the
+       UA stylesheet regardless of specificity. One !important rule beats
+       every current and future case instead of a growing per-ID list. */
+    [hidden] {
+      display: none !important;
     }
 
     .section-head-actions {
@@ -1795,6 +1820,15 @@
           <a class="nav-link" href="#market" data-section="market">Market</a>
         </nav>
 
+        <div class="dev-identity" title="Stand-in for real sign-in - see NOTES.md">
+          <label for="devUserSelect">DEV: signed in as</label>
+          <select id="devUserSelect">
+            <option value="ayman">Ayman (contributor, admin)</option>
+            <option value="dana">Dana (contributor)</option>
+            <option value="guest">Guest (no card yet)</option>
+          </select>
+        </div>
+
         <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light mode">
           <span class="theme-icon theme-icon-sun" aria-hidden="true">
             <svg viewBox="0 0 24 24">
@@ -1822,7 +1856,9 @@
             </div>
             <div class="section-head-actions">
               <a class="text-link magnetic" href="#market" id="backToPeople" hidden>&larr; All people</a>
-              <button class="btn btn-primary magnetic" id="openAddModal" type="button">+ Add new tool</button>
+              <a class="text-link magnetic" href="#admin" id="adminLink" hidden>Admin</a>
+              <button class="btn btn-primary magnetic" id="openAddModal" type="button" hidden>+ Add new tool</button>
+              <button class="btn btn-secondary magnetic" id="becomeContributorBtn" type="button" hidden>Become a contributor</button>
             </div>
           </div>
 
@@ -1844,6 +1880,14 @@
                 <div class="artifact-cards" id="artifactCards"></div>
               </div>
             </div>
+          </div>
+
+          <div class="person-market" id="adminPanel" hidden>
+            <div class="person-market-head">
+              <h3>Pending contributor requests</h3>
+              <p>Admin only - approving creates their card.</p>
+            </div>
+            <div class="skill-cards" id="adminRequests"></div>
           </div>
         </div>
       </section>
@@ -1867,12 +1911,7 @@
         </div>
 
         <form id="addForm">
-          <div class="form-field">
-            <label for="addAuthor">Author</label>
-            <select id="addAuthor" required></select>
-          </div>
-
-          <div class="form-field">
+          <div class="form-field" id="addTypeField">
             <label>Type</label>
             <div class="radio-row">
               <label><input type="radio" name="addType" value="skill" checked> Skill</label>
@@ -2335,19 +2374,68 @@
 
   <script>
     (() => {
+      const WORKER_URL = "https://skill-hub-gateway.aymansiddiki1970.workers.dev";
+
       const peopleGrid = document.getElementById("peopleGrid");
       const personMarket = document.getElementById("personMarket");
+      const adminPanel = document.getElementById("adminPanel");
+      const adminRequests = document.getElementById("adminRequests");
       const backToPeople = document.getElementById("backToPeople");
+      const adminLink = document.getElementById("adminLink");
+      const openAddModal = document.getElementById("openAddModal");
+      const becomeContributorBtn = document.getElementById("becomeContributorBtn");
       const personName = document.getElementById("personName");
       const personRole = document.getElementById("personRole");
       const skillCards = document.getElementById("skillCards");
       const artifactCards = document.getElementById("artifactCards");
+      const devUserSelect = document.getElementById("devUserSelect");
+      const addModalOverlay = document.getElementById("addModalOverlay");
+      const closeAddModal = document.getElementById("closeAddModal");
+      const addForm = document.getElementById("addForm");
+      const addTypeField = document.getElementById("addTypeField");
+      const skillFields = document.getElementById("skillFields");
+      const artifactFields = document.getElementById("artifactFields");
+      const addSubmit = document.getElementById("addSubmit");
+      const addStatus = document.getElementById("addStatus");
 
       let people = [];
+      let identity = null;
+      let editing = null;
 
       function stripFrontmatter(text) {
         const match = text.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
         return match ? text.slice(match[0].length).trim() : text.trim();
+      }
+
+      function slugify(text) {
+        const slug = text.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+        return slug || "untitled";
+      }
+
+      function restoreDevUser() {
+        try {
+          const saved = localStorage.getItem("dev-user");
+          if (saved) devUserSelect.value = saved;
+        } catch {}
+      }
+
+      function api(path, options = {}) {
+        return fetch(WORKER_URL + path, {
+          ...options,
+          headers: { "X-Dev-User": devUserSelect.value, ...(options.headers || {}) },
+        });
+      }
+
+      function refreshIdentity() {
+        return api("/api/whoami").then(res => res.json()).then(data => { identity = data.identity; });
+      }
+
+      function refreshCatalog() {
+        return api("/api/catalog").then(res => res.json()).then(data => { people = data; });
+      }
+
+      function canEditPerson(personId) {
+        return Boolean(identity) && (identity.authorId === personId || identity.isAdmin);
       }
 
       function renderPeople() {
@@ -2372,6 +2460,7 @@
       function renderMarket(person) {
         personName.textContent = person.name;
         personRole.textContent = `${person.role} · ${person.focus}`;
+        const editable = canEditPerson(person.id);
 
         skillCards.innerHTML = person.skills.map(skill => `
           <article class="skill-card">
@@ -2381,9 +2470,10 @@
             </div>
             <p>${skill.description}</p>
             <div class="artifact-actions">
-              <button class="btn btn-secondary copy-skill" data-path="${skill.path}">Copy prompt</button>
-              <a class="btn btn-secondary" href="${skill.path}" download>Download .md</a>
-              <button class="btn btn-secondary remove-asset" data-author="${person.id}" data-type="skill" data-filename="${skill.path.split("/").pop()}">Remove</button>
+              <button class="btn btn-secondary copy-skill" data-id="${skill.id}">Copy prompt</button>
+              <a class="btn btn-secondary" href="${WORKER_URL}/api/content?type=skill&id=${skill.id}" download>Download .md</a>
+              ${editable ? `<button class="btn btn-secondary edit-asset" data-type="skill" data-id="${skill.id}" data-author="${person.id}">Edit</button>` : ""}
+              ${editable ? `<button class="btn btn-secondary remove-asset" data-type="skill" data-id="${skill.id}">Remove</button>` : ""}
             </div>
           </article>
         `).join("");
@@ -2396,26 +2486,64 @@
             <div class="artifact-actions">
               <a class="btn btn-secondary" href="${artifact.url}" target="_blank" rel="noreferrer">Open artifact</a>
               <button class="btn btn-secondary copy-artifact" data-url="${artifact.url}">Copy link</button>
-              <button class="btn btn-secondary remove-asset" data-author="${person.id}" data-type="artifact" data-filename="${artifact.id}.json">Remove</button>
+              ${editable ? `<button class="btn btn-secondary edit-asset" data-type="artifact" data-id="${artifact.id}" data-author="${person.id}">Edit</button>` : ""}
+              ${editable ? `<button class="btn btn-secondary remove-asset" data-type="artifact" data-id="${artifact.id}">Remove</button>` : ""}
             </div>
           </article>
         `).join("");
 
         peopleGrid.hidden = true;
+        adminPanel.hidden = true;
         backToPeople.hidden = false;
         personMarket.hidden = false;
       }
 
       function showPeopleGrid() {
         peopleGrid.hidden = false;
-        backToPeople.hidden = true;
         personMarket.hidden = true;
+        adminPanel.hidden = true;
+        backToPeople.hidden = true;
+      }
+
+      function showAdminPanel() {
+        peopleGrid.hidden = true;
+        personMarket.hidden = true;
+        adminPanel.hidden = false;
+        backToPeople.hidden = false;
+
+        if (!identity || !identity.isAdmin) {
+          adminRequests.innerHTML = "<p>Admin access required.</p>";
+          return;
+        }
+
+        api("/api/admin/requests").then(res => res.json()).then(data => {
+          if (!data.requests || !data.requests.length) {
+            adminRequests.innerHTML = "<p>No pending requests.</p>";
+            return;
+          }
+          adminRequests.innerHTML = data.requests.map(req => `
+            <article class="skill-card">
+              <h4>${req.name}</h4>
+              <p>${req.email}</p>
+              <div class="artifact-actions">
+                <input class="approve-role" placeholder="Role" style="max-width:150px;">
+                <input class="approve-focus" placeholder="Focus" style="max-width:190px;">
+                <button class="btn btn-primary approve-request" data-id="${req.id}">Approve</button>
+              </div>
+            </article>
+          `).join("");
+        });
       }
 
       function route() {
-        const id = window.location.hash.slice(1);
-        const person = people.find(p => p.id === id);
+        const hash = window.location.hash.slice(1);
 
+        if (hash === "admin") {
+          showAdminPanel();
+          return;
+        }
+
+        const person = people.find(p => p.id === hash);
         if (person) {
           renderMarket(person);
         } else {
@@ -2423,20 +2551,35 @@
         }
       }
 
-      fetch("site/catalog.json")
-        .then(res => res.json())
-        .then(data => {
-          people = data;
-          renderPeople();
-          route();
-        });
+      function updateHeaderControls() {
+        adminLink.hidden = !(identity && identity.isAdmin);
+        openAddModal.hidden = !(identity && identity.isContributor);
+        becomeContributorBtn.hidden = !identity || identity.isContributor;
+        if (!becomeContributorBtn.hidden) becomeContributorBtn.textContent = "Become a contributor";
+      }
+
+      function render() {
+        updateHeaderControls();
+        renderPeople();
+        route();
+      }
+
+      function init() {
+        restoreDevUser();
+        Promise.all([refreshIdentity(), refreshCatalog()]).then(render);
+      }
+
+      devUserSelect.addEventListener("change", () => {
+        try { localStorage.setItem("dev-user", devUserSelect.value); } catch {}
+        refreshIdentity().then(render);
+      });
 
       window.addEventListener("hashchange", route);
 
       document.addEventListener("click", event => {
         const copySkill = event.target.closest(".copy-skill");
         if (copySkill) {
-          fetch(copySkill.dataset.path)
+          api(`/api/content?type=skill&id=${copySkill.dataset.id}`)
             .then(res => res.text())
             .then(text => navigator.clipboard.writeText(stripFrontmatter(text)))
             .then(() => {
@@ -2458,6 +2601,17 @@
           return;
         }
 
+        const editBtn = event.target.closest(".edit-asset");
+        if (editBtn) {
+          const type = editBtn.dataset.type;
+          const person = people.find(p => p.id === editBtn.dataset.author);
+          const item = type === "skill"
+            ? person.skills.find(s => s.id === editBtn.dataset.id)
+            : person.artifacts.find(a => a.id === editBtn.dataset.id);
+          showEditModal(type, item);
+          return;
+        }
+
         const removeBtn = event.target.closest(".remove-asset");
         if (removeBtn) {
           if (removeBtn.dataset.confirming !== "true") {
@@ -2475,20 +2629,17 @@
           removeBtn.disabled = true;
           removeBtn.textContent = "Removing...";
 
-          fetch(GATEWAY_URL, {
+          api("/api/asset", {
             method: "DELETE",
-            headers: { "Content-Type": "application/json", "X-Team-Auth": TEAM_AUTH_SECRET },
-            body: JSON.stringify({
-              author: removeBtn.dataset.author,
-              type: removeBtn.dataset.type,
-              filename: removeBtn.dataset.filename,
-            }),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: removeBtn.dataset.type, id: removeBtn.dataset.id }),
           })
             .then(async res => {
               const data = await res.json();
               if (!res.ok) throw new Error(data.error || "remove failed");
-              removeBtn.closest("article").remove();
+              return refreshCatalog();
             })
+            .then(render)
             .catch(() => {
               removeBtn.textContent = "Remove failed";
               removeBtn.disabled = false;
@@ -2497,40 +2648,76 @@
                 removeBtn.dataset.confirming = "false";
               }, 2000);
             });
+          return;
+        }
+
+        const approveBtn = event.target.closest(".approve-request");
+        if (approveBtn) {
+          const card = approveBtn.closest("article");
+          const role = card.querySelector(".approve-role").value.trim();
+          const focus = card.querySelector(".approve-focus").value.trim();
+
+          approveBtn.disabled = true;
+          approveBtn.textContent = "Approving...";
+
+          api("/api/admin/approve", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ requestId: Number(approveBtn.dataset.id), role, focus }),
+          })
+            .then(async res => {
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || "approve failed");
+              return refreshCatalog();
+            })
+            .then(() => {
+              render();
+              showAdminPanel();
+            })
+            .catch(() => {
+              approveBtn.textContent = "Failed";
+              approveBtn.disabled = false;
+            });
         }
       });
 
-      const addModalOverlay = document.getElementById("addModalOverlay");
-      const openAddModal = document.getElementById("openAddModal");
-      const closeAddModal = document.getElementById("closeAddModal");
-      const addForm = document.getElementById("addForm");
-      const addAuthor = document.getElementById("addAuthor");
-      const skillFields = document.getElementById("skillFields");
-      const artifactFields = document.getElementById("artifactFields");
-      const addSubmit = document.getElementById("addSubmit");
-      const addStatus = document.getElementById("addStatus");
-
-      // POC-only: the Worker is gated by this one shared secret, not per-user
-      // identity, so it's visible to anyone who views source. Fine until the
-      // Google-auth layer replaces it - see NOTES.md.
-      const GATEWAY_URL = "https://skill-hub-gateway.aymansiddiki1970.workers.dev/api/asset";
-      const TEAM_AUTH_SECRET = "BC1ghVMxAteqg2ZwsxCBN84jtmy1vydA";
-
-      function slugify(text) {
-        const slug = text
-          .toLowerCase()
-          .trim()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "");
-        return slug || "untitled";
-      }
-
       function showAddModal() {
-        addAuthor.innerHTML = people.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+        editing = null;
+        document.getElementById("addModalTitle").textContent = "Add a skill or artifact";
+        addSubmit.textContent = "Add to hub";
+        addTypeField.hidden = false;
         addForm.reset();
         addStatus.textContent = "";
         skillFields.hidden = false;
         artifactFields.hidden = true;
+        addModalOverlay.hidden = false;
+      }
+
+      function showEditModal(type, item) {
+        editing = { type, id: item.id };
+        document.getElementById("addModalTitle").textContent = `Edit ${type}`;
+        addSubmit.textContent = "Save changes";
+        addTypeField.hidden = true;
+        addForm.reset();
+        addStatus.textContent = "";
+
+        addForm.querySelector(`input[name="addType"][value="${type}"]`).checked = true;
+        document.getElementById("addTitle").value = item.title;
+        document.getElementById("addDescription").value = item.description;
+
+        if (type === "skill") {
+          skillFields.hidden = false;
+          artifactFields.hidden = true;
+          document.getElementById("addTags").value = item.tags.join(", ");
+          api(`/api/content?type=skill&id=${item.id}`)
+            .then(res => res.text())
+            .then(text => { document.getElementById("addBody").value = stripFrontmatter(text); });
+        } else {
+          skillFields.hidden = true;
+          artifactFields.hidden = false;
+          document.getElementById("addUrl").value = item.url;
+        }
+
         addModalOverlay.hidden = false;
       }
 
@@ -2542,6 +2729,27 @@
       closeAddModal.addEventListener("click", hideAddModal);
       addModalOverlay.addEventListener("click", event => {
         if (event.target === addModalOverlay) hideAddModal();
+      });
+
+      becomeContributorBtn.addEventListener("click", () => {
+        becomeContributorBtn.disabled = true;
+        becomeContributorBtn.textContent = "Requesting...";
+
+        api("/api/contributor-request", { method: "POST" })
+          .then(async res => {
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "request failed");
+            becomeContributorBtn.textContent = data.alreadyPending ? "Request already pending" : "Request sent!";
+          })
+          .catch(() => {
+            becomeContributorBtn.textContent = "Failed - try again";
+          })
+          .finally(() => {
+            setTimeout(() => {
+              becomeContributorBtn.disabled = false;
+              if (!identity || !identity.isContributor) becomeContributorBtn.textContent = "Become a contributor";
+            }, 2500);
+          });
       });
 
       addForm.addEventListener("change", event => {
@@ -2593,38 +2801,42 @@
       addForm.addEventListener("submit", event => {
         event.preventDefault();
 
-        const author = addAuthor.value;
         const type = addForm.querySelector('input[name="addType"]:checked').value;
         const title = document.getElementById("addTitle").value.trim();
         const description = document.getElementById("addDescription").value.trim();
-        const slug = slugify(title);
 
-        let filename, content;
+        const payload = {
+          intent: editing ? "update" : "create",
+          type,
+          title,
+          description,
+        };
+        if (editing) payload.id = editing.id;
 
         if (type === "skill") {
-          const tags = document.getElementById("addTags").value
-            .split(",").map(t => t.trim()).filter(Boolean);
-          const body = document.getElementById("addBody").value.trim();
-          filename = `${slug}.md`;
-          content = `---\ntitle: ${title}\ndescription: ${description}\ntags: [${tags.join(", ")}]\n---\n\n${body}\n`;
+          payload.tags = document.getElementById("addTags").value.split(",").map(t => t.trim()).filter(Boolean);
+          payload.body = document.getElementById("addBody").value.trim();
         } else {
-          const url = document.getElementById("addUrl").value.trim();
-          filename = `${slug}.json`;
-          content = JSON.stringify({ title, description, url }, null, 2) + "\n";
+          payload.url = document.getElementById("addUrl").value.trim();
         }
 
         addSubmit.disabled = true;
-        addStatus.textContent = "Adding...";
+        addStatus.textContent = editing ? "Saving..." : "Adding...";
 
-        fetch(GATEWAY_URL, {
+        api("/api/asset", {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-Team-Auth": TEAM_AUTH_SECRET },
-          body: JSON.stringify({ author, type, filename, content }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
         })
           .then(async res => {
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "add failed");
-            addStatus.textContent = "Added - it'll show up once the catalog rebuilds (~1 min).";
+            if (!res.ok) throw new Error(data.error || "failed");
+            addStatus.textContent = editing ? "Saved." : "Added.";
+            return refreshCatalog();
+          })
+          .then(() => {
+            render();
+            setTimeout(hideAddModal, 600);
           })
           .catch(err => {
             addStatus.textContent = `Error: ${err.message}`;
@@ -2633,6 +2845,8 @@
             addSubmit.disabled = false;
           });
       });
+
+      init();
     })();
   </script>
 </body>

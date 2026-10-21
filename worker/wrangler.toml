@@ -7,3 +7,8 @@ GITHUB_OWNER = "aymansiddiki-de"
 GITHUB_REPO = "skill-hub-poc"
 GITHUB_BRANCH = "main"
 ALLOWED_ORIGIN = "https://aymansiddiki-de.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "skill-hub-db"
+database_id = "ddd0048d-ac9c-4059-b668-075312522bc4"
